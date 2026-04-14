@@ -1,0 +1,1756 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>Web問診票 | 調剤薬局</title>
+<style>
+/* ========== カスタマイズ変数 ========== */
+:root {
+  --pri: #6B9DC2;
+  --pri-l: #F0F6FA;
+  --pri-d: #4A7FA3;
+  --pri-g: linear-gradient(135deg, #7BAAC8, #5B8EAD);
+  --acc: #89BDD3;
+  --ok: #6DBB8B;
+  --ok-bg: #F0F9F3;
+  --ng: #D4726C;
+  --ng-bg: #FDF0EF;
+  --warn: #DBA95A;
+  --warn-bg: #FDF8EE;
+  --bg: #F8F9FB;
+  --card: #FFFFFF;
+  --tx: #3D4F5F;
+  --txs: #8E9DAA;
+  --bd: #DDE6ED;
+  --radius: 16px;
+  --sh: 0 2px 20px rgba(107,157,194,.07);
+}
+
+/* ========== リセット・ベース ========== */
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+  background: var(--bg);
+  color: var(--tx);
+  font-size: 18px;
+  line-height: 1.8;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* ========== レイアウト ========== */
+.wrap { max-width: 520px; margin: 0 auto; padding: 0 16px 60px; }
+
+/* ========== ヘッダー ========== */
+.hd {
+  background: var(--pri-g);
+  padding: 32px 20px 28px;
+  text-align: center;
+  color: #fff;
+  margin: 0 -16px 24px;
+  border-radius: 0 0 28px 28px;
+  position: relative;
+  overflow: hidden;
+}
+.hd::before {
+  content: '';
+  position: absolute;
+  top: -40%;
+  right: -20%;
+  width: 200px;
+  height: 200px;
+  background: rgba(255,255,255,.06);
+  border-radius: 50%;
+}
+.hd .pharmacy-name {
+  font-size: 16px;
+  letter-spacing: 2px;
+  opacity: .85;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+.hd h1 {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.5;
+  margin-bottom: 4px;
+}
+.hd .sub {
+  font-size: 16px;
+  opacity: .8;
+  line-height: 1.6;
+}
+
+/* ========== プログレスバー ========== */
+.progress-bar {
+  display: flex;
+  gap: 4px;
+  margin: 0 4px 24px;
+}
+.progress-bar .seg {
+  flex: 1;
+  height: 8px;
+  border-radius: 3px;
+  background: var(--bd);
+  transition: background .5s ease;
+}
+.progress-bar .seg.active { background: var(--pri); }
+.progress-bar .seg.done { background: var(--ok); }
+.step-label {
+  text-align: center;
+  font-size: 16px;
+  color: var(--txs);
+  margin-bottom: 20px;
+  font-weight: 500;
+}
+
+/* ========== セクション表示制御 ========== */
+.section { display: none; }
+.section.on {
+  display: block;
+  animation: fadeSlideIn .4s ease;
+}
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ========== カード ========== */
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 24px 20px;
+  box-shadow: var(--sh);
+  border: 1px solid var(--bd);
+  margin-bottom: 16px;
+}
+
+/* ========== ラベル・見出し ========== */
+.badge {
+  display: inline-block;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--pri);
+  background: var(--pri-l);
+  padding: 6px 16px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+  letter-spacing: 1px;
+}
+.q-title {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+.q-note {
+  font-size: 16px;
+  color: var(--txs);
+  line-height: 1.7;
+  margin-bottom: 20px;
+}
+.required {
+  display: inline-block;
+  font-size: 13px;
+  color: #fff;
+  background: var(--ng);
+  padding: 3px 10px;
+  border-radius: 4px;
+  margin-left: 6px;
+  vertical-align: middle;
+  font-weight: 700;
+}
+.optional {
+  display: inline-block;
+  font-size: 13px;
+  color: var(--txs);
+  background: var(--bd);
+  padding: 3px 10px;
+  border-radius: 4px;
+  margin-left: 6px;
+  vertical-align: middle;
+  font-weight: 700;
+}
+.field-group { margin-bottom: 28px; }
+.field-group:last-child { margin-bottom: 0; }
+.field-label {
+  display: block;
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: var(--tx);
+}
+
+/* ========== カード型選択ボタン ========== */
+.card-options { display: flex; flex-direction: column; gap: 10px; }
+.card-options.horizontal { flex-direction: row; flex-wrap: wrap; }
+.card-options.horizontal .card-opt { flex: 1; min-width: 100px; }
+.card-opt {
+  display: block;
+  width: 100%;
+  padding: 18px 20px;
+  border: 2px solid var(--bd);
+  border-radius: 12px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--tx);
+  cursor: pointer;
+  transition: all .2s;
+  text-align: center;
+  -webkit-tap-highlight-color: transparent;
+  min-height: 56px;
+  line-height: 1.4;
+}
+.card-opt:active { transform: scale(.97); }
+.card-opt.selected {
+  border-color: var(--pri);
+  color: var(--pri-d);
+  background: var(--pri-l);
+  font-weight: 700;
+}
+.card-opt-multi.selected {
+  border-color: var(--pri);
+  color: var(--pri-d);
+  background: var(--pri-l);
+}
+
+/* ========== フォーム要素 ========== */
+.input-field {
+  width: 100%;
+  padding: 16px 16px;
+  border: 2px solid var(--bd);
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 18px;
+  color: var(--tx);
+  background: #fff;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: border-color .2s;
+  min-height: 56px;
+}
+.input-field:focus {
+  outline: none;
+  border-color: var(--pri);
+}
+.input-field::placeholder { color: #b0b8b8; }
+select.input-field {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237F8C8D' stroke-width='2' fill='none'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 38px;
+}
+textarea.input-field {
+  resize: vertical;
+  min-height: 100px;
+  line-height: 1.6;
+}
+.select-row {
+  display: flex;
+  gap: 8px;
+}
+.select-row select { flex: 1; }
+
+/* ========== チェックボックス・チップ ========== */
+.chip-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.chip {
+  display: inline-block;
+  padding: 12px 20px;
+  border: 2px solid var(--bd);
+  border-radius: 24px;
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--tx);
+  cursor: pointer;
+  transition: all .2s;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  min-height: 52px;
+  line-height: 1.3;
+}
+.chip.selected {
+  border-color: var(--pri);
+  background: var(--pri-l);
+  color: var(--pri-d);
+  font-weight: 700;
+}
+.checkbox-list { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 2px solid var(--bd);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all .2s;
+  min-height: 56px;
+  -webkit-tap-highlight-color: transparent;
+}
+.checkbox-item.selected {
+  border-color: var(--pri);
+  background: var(--pri-l);
+}
+.checkbox-item input[type="checkbox"] {
+  width: 26px; height: 26px;
+  accent-color: var(--pri);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.checkbox-item label {
+  font-size: 18px;
+  cursor: pointer;
+  flex: 1;
+}
+
+/* ========== 条件表示エリア ========== */
+.conditional {
+  display: none;
+  margin-top: 12px;
+  padding: 16px;
+  background: #F8FBFB;
+  border-radius: 10px;
+  border: 1px solid var(--bd);
+  animation: fadeSlideIn .3s ease;
+}
+.conditional.open { display: block; }
+
+/* ========== 写真アップロード ========== */
+.upload-area {
+  border: 2px dashed var(--bd);
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all .2s;
+  background: #FAFCFC;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.upload-area:hover, .upload-area.dragover {
+  border-color: var(--pri);
+  background: var(--pri-l);
+}
+.upload-area .icon { font-size: 32px; opacity: .5; }
+.upload-area .text { font-size: 17px; color: var(--txs); }
+.upload-area .text-small { font-size: 14px; color: #aaa; }
+.upload-preview {
+  margin-top: 10px;
+  position: relative;
+  display: none;
+}
+.upload-preview img {
+  max-width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--bd);
+}
+.upload-preview .remove-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(0,0,0,.6);
+  color: #fff;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ========== ボタン ========== */
+.btn-primary {
+  display: block;
+  width: 100%;
+  padding: 18px;
+  border-radius: 12px;
+  border: none;
+  font-family: inherit;
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .2s;
+  -webkit-tap-highlight-color: transparent;
+  min-height: 60px;
+  background: var(--pri);
+  color: #fff;
+}
+.btn-primary:hover { background: var(--pri-d); }
+.btn-primary:active { transform: scale(.98); }
+.btn-primary:disabled {
+  background: #B8C8D4;
+  cursor: not-allowed;
+  transform: none;
+}
+.btn-secondary {
+  display: block;
+  width: 100%;
+  padding: 16px;
+  border-radius: 12px;
+  border: 2px solid var(--bd);
+  background: #fff;
+  font-family: inherit;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--txs);
+  cursor: pointer;
+  transition: all .2s;
+  min-height: 56px;
+}
+.btn-secondary:active { transform: scale(.98); }
+.btn-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+.btn-row .btn-primary, .btn-row .btn-secondary { flex: 1; }
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 0;
+  font-family: inherit;
+  font-size: 17px;
+  color: var(--txs);
+  background: none;
+  border: none;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+.btn-back::before { content: '\2190'; font-size: 18px; }
+
+/* ========== 確認画面 ========== */
+.confirm-section {
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--bd);
+  padding-bottom: 12px;
+}
+.confirm-section:last-child { border-bottom: none; }
+.confirm-section-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--pri);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.confirm-section-title .edit-link {
+  font-size: 15px;
+  color: var(--acc);
+  cursor: pointer;
+  font-weight: 600;
+  text-decoration: underline;
+}
+.confirm-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 17px;
+  line-height: 1.7;
+}
+.confirm-row .label { color: var(--txs); flex-shrink: 0; margin-right: 12px; }
+.confirm-row .value { text-align: right; font-weight: 500; word-break: break-all; }
+
+/* ========== 完了画面 ========== */
+.complete-icon {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: var(--ok-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  animation: popIn .5s ease;
+}
+.complete-icon svg { width: 40px; height: 40px; }
+@keyframes popIn {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes checkDraw {
+  to { stroke-dashoffset: 0; }
+}
+
+/* ========== エラー表示 ========== */
+.error-msg {
+  color: var(--ng);
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 8px;
+  display: none;
+}
+.error-msg.show { display: block; animation: fadeSlideIn .3s ease; }
+.input-error { border-color: var(--ng) !important; }
+
+/* ========== 行追加入力 ========== */
+.multi-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.multi-input-row .input-field { flex: 1; }
+.add-row-btn, .remove-row-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  border: 2px solid var(--bd);
+  background: #fff;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--pri);
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.add-row-btn:active { transform: scale(.93); }
+.remove-row-btn {
+  color: var(--ng);
+  border-color: var(--ng-bg);
+  font-size: 22px;
+}
+.remove-row-btn:active { transform: scale(.93); }
+
+/* ========== オーバーレイ ========== */
+.overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,.5);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+.overlay.on { display: flex; }
+.overlay-box {
+  background: #fff;
+  border-radius: 18px;
+  padding: 36px 28px;
+  text-align: center;
+  max-width: 340px;
+  width: 90%;
+}
+.spinner {
+  width: 44px; height: 44px;
+  border: 4px solid var(--bd);
+  border-top-color: var(--pri);
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+  margin: 0 auto 16px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ========== 注意書き ========== */
+.info-box {
+  background: var(--pri-l);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.info-box p {
+  font-size: 14px;
+  color: var(--txs);
+  line-height: 1.7;
+}
+.info-box .icon { margin-right: 6px; }
+
+/* ========== フッター ========== */
+.footer {
+  text-align: center;
+  padding: 24px 16px;
+  font-size: 12px;
+  color: #aaa;
+  line-height: 1.8;
+}
+</style>
+</head>
+<body>
+
+<div class="hd">
+  <div class="pharmacy-name" id="pharmacyNameHeader"></div>
+  <h1>Web問診票</h1>
+  <div class="sub">安全な調剤・服薬指導のためにご記入ください</div>
+</div>
+
+<div class="wrap">
+  <div class="progress-bar" id="progressBar"></div>
+  <div class="step-label" id="stepLabel"></div>
+
+  <!-- ===== スタート画面 ===== -->
+  <div class="section on" id="sec-start">
+    <div class="card" style="text-align:center;">
+      <div style="font-size:48px;margin-bottom:12px;opacity:.7;">&#128203;</div>
+      <h2 style="font-size:20px;font-weight:700;margin-bottom:16px;" id="pharmacyNameStart"></h2>
+      <div class="info-box" style="text-align:left;">
+        <p>&#9989; この問診は<strong>安全な調剤・服薬指導</strong>のために利用します。</p>
+        <p style="margin-top:6px;">&#9200; 入力は約<strong>2〜3分</strong>です。待ち時間の短縮につながります。</p>
+      </div>
+      <div style="background:var(--warn-bg);border-radius:10px;padding:14px;margin-bottom:20px;text-align:left;">
+        <p style="font-size:14px;color:var(--tx);line-height:1.7;">
+          <strong>&#128274; 個人情報の取り扱いについて</strong><br>
+          ご入力いただいた情報は、調剤および服薬指導の目的にのみ使用いたします。第三者への提供は法令に基づく場合を除き行いません。
+        </p>
+      </div>
+      <button class="btn-primary" onclick="goToStep(1)" style="font-size:18px;padding:18px;">問診をはじめる</button>
+    </div>
+  </div>
+
+  <!-- ===== STEP 1: 基本情報 ===== -->
+  <div class="section" id="sec-step1">
+    <div class="card">
+      <div class="badge">STEP 1 / 4</div>
+      <div class="q-title">基本情報</div>
+      <div class="q-note">まずは基本的な情報をお聞かせください。</div>
+
+      <!-- 入力者 -->
+      <div class="field-group">
+        <div class="field-label">入力者<span class="required">必須</span></div>
+        <div class="card-options horizontal">
+          <button class="card-opt" data-name="inputBy" data-value="本人" onclick="selectRadio(this)">本人</button>
+          <button class="card-opt" data-name="inputBy" data-value="家族・介護者" onclick="selectRadio(this)">家族・介護者</button>
+        </div>
+        <div class="error-msg" id="err-inputBy">選択してください</div>
+      </div>
+
+      <!-- 氏名（カナ） -->
+      <div class="field-group">
+        <div class="field-label">氏名（カナ）<span class="required">必須</span></div>
+        <input type="text" class="input-field" id="nameKana" placeholder="例：ヤマダ タロウ" inputmode="text" autocomplete="off">
+        <div style="font-size:13px; color:#718096; margin-top:4px;">※ひらがな入力で自動的にカタカナに変換されます</div>
+        <div class="error-msg" id="err-nameKana">カタカナで入力してください</div>
+      </div>
+
+      <!-- 生年月日 -->
+      <div class="field-group">
+        <div class="field-label">生年月日<span class="required">必須</span></div>
+        <div class="select-row">
+          <select class="input-field" id="birthYear"><option value="">年</option></select>
+          <select class="input-field" id="birthMonth"><option value="">月</option></select>
+          <select class="input-field" id="birthDay"><option value="">日</option></select>
+        </div>
+        <div class="error-msg" id="err-birth">生年月日を選択してください</div>
+      </div>
+
+      <!-- 体重（14歳以下のみ表示） -->
+      <div class="field-group" id="weightGroup" style="display:none;">
+        <div class="field-label">体重<span class="required">必須</span></div>
+        <div style="font-size:14px; color:#718096; margin-bottom:8px;">（お薬の量を調整するために必要です）</div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <input type="text" class="input-field" id="bodyWeight" placeholder="例：35" style="max-width:150px;" inputmode="numeric">
+          <span style="font-size:18px; font-weight:600;">kg</span>
+        </div>
+        <div class="error-msg" id="err-weight">体重を入力してください</div>
+      </div>
+
+      <!-- 性別 -->
+      <div class="field-group">
+        <div class="field-label">性別<span class="required">必須</span></div>
+        <div class="card-options horizontal">
+          <button class="card-opt" data-name="gender" data-value="男性" onclick="selectRadio(this)">男性</button>
+          <button class="card-opt" data-name="gender" data-value="女性" onclick="selectRadio(this)">女性</button>
+          <button class="card-opt" data-name="gender" data-value="回答しない" onclick="selectRadio(this)">回答しない</button>
+        </div>
+        <div class="error-msg" id="err-gender">選択してください</div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-secondary" onclick="goToStep(0)">戻る</button>
+      <button class="btn-primary" id="nextBtn1" onclick="validateAndGo(1, 2)" disabled>次へ</button>
+    </div>
+  </div>
+
+  <!-- ===== STEP 2: 安全チェック ===== -->
+  <div class="section" id="sec-step2">
+    <div class="card">
+      <div class="badge">STEP 2 / 4</div>
+      <div class="q-title">安全チェック</div>
+      <div class="q-note">安全にお薬をお渡しするために確認させてください。</div>
+
+      <!-- アレルギー歴 -->
+      <div class="field-group">
+        <div class="field-label">アレルギー歴はありますか？<span class="required">必須</span></div>
+        <div style="font-size:13px; color:#718096; margin-bottom:6px;">（お薬や食べ物で、じんましん・息苦しさなどが出たことがあるか）</div>
+        <div class="card-options horizontal">
+          <button class="card-opt" data-name="allergy" data-value="はい" onclick="selectRadio(this); toggleCond('cond-allergy', true)">はい</button>
+          <button class="card-opt" data-name="allergy" data-value="いいえ" onclick="selectRadio(this); toggleCond('cond-allergy', false)">いいえ</button>
+        </div>
+        <div class="error-msg" id="err-allergy">選択してください</div>
+        <div class="conditional" id="cond-allergy">
+          <div class="field-label" style="font-size:14px;">種類を選択してください</div>
+          <div class="chip-group" id="allergyChips">
+            <span class="chip" data-value="薬" onclick="toggleChip(this)">薬</span>
+            <span class="chip" data-value="食べ物" onclick="toggleChip(this)">食べ物</span>
+            <span class="chip" data-value="その他" onclick="toggleChip(this)">その他</span>
+          </div>
+          <div class="multi-input-wrap" id="allergyDetailWrap" style="margin-top:12px;">
+            <div class="multi-input-row">
+              <input type="text" class="input-field" placeholder="詳細（例：ペニシリンでじんましん）">
+              <button type="button" class="add-row-btn" onclick="addInputRow(this)" title="行を追加">＋</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 副作用歴 -->
+      <div class="field-group">
+        <div class="field-label">薬の副作用歴はありますか？<span class="required">必須</span></div>
+        <div style="font-size:13px; color:#718096; margin-bottom:6px;">（お薬を飲んで、眠気・胃の不快感など困った症状が出たことがあるか）</div>
+        <div class="card-options horizontal">
+          <button class="card-opt" data-name="sideEffect" data-value="はい" onclick="selectRadio(this); toggleCond('cond-sideEffect', true)">はい</button>
+          <button class="card-opt" data-name="sideEffect" data-value="いいえ" onclick="selectRadio(this); toggleCond('cond-sideEffect', false)">いいえ</button>
+        </div>
+        <div class="error-msg" id="err-sideEffect">選択してください</div>
+        <div class="conditional" id="cond-sideEffect">
+          <div class="multi-input-wrap" id="sideEffectDetailWrap">
+            <div class="multi-input-row">
+              <input type="text" class="input-field" placeholder="詳細（例：○○で吐き気が出た）">
+              <button type="button" class="add-row-btn" onclick="addInputRow(this)" title="行を追加">＋</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 現在治療中の病気 -->
+      <div class="field-group">
+        <div class="field-label">現在治療中の病気はありますか？<span class="required">必須</span></div>
+        <div style="font-size:13px; color:#718096; margin-bottom:6px;">（わかる範囲で構いません）</div>
+        <div class="card-options horizontal">
+          <button class="card-opt" data-name="currentDisease" data-value="はい" onclick="selectRadio(this); toggleCond('cond-disease', true)">はい</button>
+          <button class="card-opt" data-name="currentDisease" data-value="いいえ" onclick="selectRadio(this); toggleCond('cond-disease', false)">いいえ</button>
+        </div>
+        <div class="error-msg" id="err-currentDisease">選択してください</div>
+        <div class="conditional" id="cond-disease">
+          <div class="checkbox-list" id="diseaseList">
+            <div class="checkbox-item" onclick="toggleCheckboxItem(this, event)"><input type="checkbox" value="糖尿病"><label>糖尿病</label></div>
+            <div class="checkbox-item" onclick="toggleCheckboxItem(this, event)"><input type="checkbox" value="高血圧"><label>高血圧</label></div>
+            <div class="checkbox-item" onclick="toggleCheckboxItem(this, event)"><input type="checkbox" value="心臓病"><label>心臓病</label></div>
+            <div class="checkbox-item" onclick="toggleCheckboxItem(this, event)"><input type="checkbox" value="腎臓病"><label>腎臓病</label></div>
+            <div class="checkbox-item" onclick="toggleCheckboxItem(this, event)"><input type="checkbox" value="肝臓病"><label>肝臓病</label></div>
+            <div class="checkbox-item" onclick="toggleCheckboxItem(this, event)"><input type="checkbox" value="喘息"><label>喘息</label></div>
+            <div class="checkbox-item" onclick="toggleCheckboxItem(this, event)"><input type="checkbox" value="てんかん"><label>てんかん</label></div>
+            <div class="checkbox-item" onclick="toggleCheckboxItem(this, event)"><input type="checkbox" value="精神疾患"><label>精神疾患</label></div>
+            <div class="checkbox-item" onclick="toggleCheckboxItem(this, event)"><input type="checkbox" value="その他"><label>その他</label></div>
+          </div>
+          <div style="margin-top:10px;">
+            <input type="text" class="input-field" id="diseaseOther" placeholder="その他の病名があれば入力">
+          </div>
+        </div>
+      </div>
+
+      <!-- 他科受診 -->
+      <div class="field-group">
+        <div class="field-label">ほかの病院・クリニックにも通っていますか？<span class="required">必須</span></div>
+        <div style="font-size:13px; color:#718096; margin-bottom:6px;">（わからなければ口頭で伝えていただいても大丈夫です）</div>
+        <div class="card-options horizontal">
+          <button class="card-opt" data-name="otherHospital" data-value="はい" onclick="selectRadio(this); toggleCond('cond-hospital', true)">はい</button>
+          <button class="card-opt" data-name="otherHospital" data-value="いいえ" onclick="selectRadio(this); toggleCond('cond-hospital', false)">いいえ</button>
+        </div>
+        <div class="error-msg" id="err-otherHospital">選択してください</div>
+        <div class="conditional" id="cond-hospital">
+          <div class="multi-input-wrap" id="otherHospitalWrap">
+            <div class="multi-input-row">
+              <input type="text" class="input-field" placeholder="医療機関名（任意）">
+              <button type="button" class="add-row-btn" onclick="addInputRow(this)" title="行を追加">＋</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 現在使用中の薬 -->
+      <div class="field-group">
+        <div class="field-label">現在使用中のお薬はありますか？<span class="required">必須</span></div>
+        <div style="font-size:13px; color:#718096; margin-bottom:6px;">（他の病院の薬、市販薬、サプリメントを含む）</div>
+        <div class="card-options">
+          <button class="card-opt" data-name="currentMeds" data-value="手帳あり" onclick="selectRadio(this); showMedsOption('photo')">お薬手帳あり（写真を撮影）</button>
+          <button class="card-opt" data-name="currentMeds" data-value="手帳持参" onclick="selectRadio(this); showMedsOption('none')">来局時に手帳を見せる</button>
+          <button class="card-opt" data-name="currentMeds" data-value="手帳なし・薬あり" onclick="selectRadio(this); showMedsOption('text')">手帳なし・お薬あり</button>
+          <button class="card-opt" data-name="currentMeds" data-value="薬なし" onclick="selectRadio(this); showMedsOption('none')">お薬なし</button>
+        </div>
+        <div class="error-msg" id="err-currentMeds">選択してください</div>
+        <div class="conditional" id="cond-meds-photo">
+          <div id="photoList"></div>
+          <div class="upload-area" id="uploadArea" onclick="document.getElementById('medsPhotoInput').click()">
+            <div class="icon">&#128247;</div>
+            <div class="text">タップして写真を撮影・選択</div>
+            <div class="text-small">お薬手帳のページを撮影してください（最大5枚）</div>
+            <div class="text-small">うまく撮れない場合は、来局時にお持ちください</div>
+          </div>
+          <input type="file" id="medsPhotoInput" accept="image/*" capture="environment" style="display:none;" onchange="handlePhotoUpload(this)">
+          <div id="photoCount" style="font-size:14px; color:var(--txs); margin-top:8px; text-align:center; display:none;"></div>
+        </div>
+        <div class="conditional" id="cond-meds-text">
+          <textarea class="input-field" id="currentMedsDetail" placeholder="お薬の名前がわかる範囲でご記入ください&#10;（もしくは薬剤師に直接お伝えください）" style="font-size:18px;"></textarea>
+        </div>
+      </div>
+
+      <!-- 妊娠・授乳（女性のみ） -->
+      <div class="field-group" id="pregnancyGroup" style="display:none;">
+        <div class="field-label">妊娠・授乳について<span class="required">必須</span></div>
+        <div class="card-options">
+          <button class="card-opt" data-name="pregnancy" data-value="妊娠中" onclick="selectRadio(this)">妊娠中</button>
+          <button class="card-opt" data-name="pregnancy" data-value="授乳中" onclick="selectRadio(this)">授乳中</button>
+          <button class="card-opt" data-name="pregnancy" data-value="可能性あり" onclick="selectRadio(this)">妊娠の可能性あり</button>
+          <button class="card-opt" data-name="pregnancy" data-value="なし" onclick="selectRadio(this)">該当なし</button>
+        </div>
+        <div class="error-msg" id="err-pregnancy">選択してください</div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-secondary" onclick="goToStep(1)">戻る</button>
+      <button class="btn-primary" id="nextBtn2" onclick="validateAndGo(2, 3)" disabled>次へ</button>
+    </div>
+  </div>
+
+  <!-- ===== STEP 3: 服薬状況 ===== -->
+  <div class="section" id="sec-step3">
+    <div class="card">
+      <div class="badge">STEP 3 / 4</div>
+      <div class="q-title">服薬状況</div>
+      <div class="q-note">お薬の飲み方についてお聞かせください。</div>
+
+      <!-- 残薬 -->
+      <div class="field-group">
+        <div class="field-label">お薬が余っていますか？<span class="required">必須</span></div>
+        <div class="card-options horizontal">
+          <button class="card-opt" data-name="leftoverMeds" data-value="はい" onclick="selectRadio(this); toggleCond('cond-leftover', true)">はい</button>
+          <button class="card-opt" data-name="leftoverMeds" data-value="いいえ" onclick="selectRadio(this); toggleCond('cond-leftover', false)">いいえ</button>
+        </div>
+        <div class="error-msg" id="err-leftoverMeds">選択してください</div>
+        <div class="conditional" id="cond-leftover">
+          <textarea class="input-field" id="leftoverDetail" placeholder="例：血圧の薬が2週間分くらい余っている" style="min-height:80px;"></textarea>
+        </div>
+      </div>
+
+      <!-- 飲みにくさ -->
+      <div class="field-group">
+        <div class="field-label">お薬の飲みにくさはありますか？<span class="required">必須</span></div>
+        <div class="card-options horizontal">
+          <button class="card-opt" data-name="swallowDifficulty" data-value="はい" onclick="selectRadio(this); toggleCond('cond-swallow', true)">はい</button>
+          <button class="card-opt" data-name="swallowDifficulty" data-value="いいえ" onclick="selectRadio(this); toggleCond('cond-swallow', false)">いいえ</button>
+        </div>
+        <div class="error-msg" id="err-swallowDifficulty">選択してください</div>
+        <div class="conditional" id="cond-swallow">
+          <div class="chip-group" id="swallowChips">
+            <span class="chip" data-value="錠剤が苦手" onclick="toggleChip(this)">錠剤が苦手</span>
+            <span class="chip" data-value="粉が苦手" onclick="toggleChip(this)">粉が苦手</span>
+            <span class="chip" data-value="カプセルが苦手" onclick="toggleChip(this)">カプセルが苦手</span>
+            <span class="chip" data-value="一包化希望" onclick="toggleChip(this)">一包化希望</span>
+            <span class="chip" data-value="その他" onclick="toggleChip(this)">その他</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 気になる症状 -->
+      <div class="field-group">
+        <div class="field-label">服薬中に気になる症状はありますか？<span class="required">必須</span></div>
+        <div class="card-options horizontal">
+          <button class="card-opt" data-name="symptoms" data-value="はい" onclick="selectRadio(this); toggleCond('cond-symptoms', true)">はい</button>
+          <button class="card-opt" data-name="symptoms" data-value="いいえ" onclick="selectRadio(this); toggleCond('cond-symptoms', false)">いいえ</button>
+        </div>
+        <div class="error-msg" id="err-symptoms">選択してください</div>
+        <div class="conditional" id="cond-symptoms">
+          <div style="font-size:14px; color:#718096; margin-bottom:8px;">当てはまるものをタップしてください（複数可）</div>
+          <div class="chip-group" id="symptomChips">
+            <span class="chip" data-value="胃腸の不調" onclick="toggleChip(this)">胃腸の不調</span>
+            <span class="chip" data-value="眠気・だるさ" onclick="toggleChip(this)">眠気・だるさ</span>
+            <span class="chip" data-value="めまい" onclick="toggleChip(this)">めまい</span>
+            <span class="chip" data-value="かゆみ・発疹" onclick="toggleChip(this)">かゆみ・発疹</span>
+            <span class="chip" data-value="痛み" onclick="toggleChip(this)">痛み</span>
+            <span class="chip" data-value="その他" onclick="toggleChip(this)">その他</span>
+          </div>
+          <div style="margin-top:10px;">
+            <textarea class="input-field" id="symptomsDetail" placeholder="詳しい内容があればご記入ください" style="min-height:70px;"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-secondary" onclick="goToStep(2)">戻る</button>
+      <button class="btn-primary" id="nextBtn3" onclick="validateAndGo(3, 4)" disabled>次へ</button>
+    </div>
+  </div>
+
+  <!-- ===== STEP 4: 希望・連絡 ===== -->
+  <div class="section" id="sec-step4">
+    <div class="card">
+      <div class="badge">STEP 4 / 4</div>
+      <div class="q-title">お薬のご希望とご連絡先</div>
+      <div class="q-note">最後にご希望と連絡先をお聞かせください。</div>
+
+      <!-- お薬のご希望 -->
+      <div class="field-group">
+        <div style="font-size:15px; color:#4A6070; background:var(--pri-l); border:1px solid var(--bd); border-radius:10px; padding:14px 16px; margin-bottom:14px; line-height:1.7;">
+          通常は在庫のあるお薬でご用意しております。
+        </div>
+        <div class="field-label">お薬の種類やメーカーについてご希望はありますか？<span class="required">必須</span></div>
+        <div class="card-options horizontal">
+          <button class="card-opt" data-name="genericPref" data-value="特になし" onclick="selectRadio(this); toggleCond('cond-medsPref', false)">特になし</button>
+          <button class="card-opt" data-name="genericPref" data-value="希望あり" onclick="selectRadio(this); toggleCond('cond-medsPref', true)">希望あり</button>
+        </div>
+        <div class="error-msg" id="err-genericPref">選択してください</div>
+        <div class="conditional" id="cond-medsPref">
+          <input type="text" class="input-field" id="medsPrefDetail" placeholder="ご希望の内容をご記入ください">
+        </div>
+      </div>
+
+      <!-- 体調・相談 -->
+      <div class="field-group">
+        <div class="field-label">本日の体調・ご相談<span class="optional">任意</span></div>
+        <textarea class="input-field" id="consultation" placeholder="例：最近めまいがする、薬の飲み方を相談したい等"></textarea>
+      </div>
+
+      <!-- 電話番号 -->
+      <div class="field-group">
+        <div class="field-label">電話番号<span class="required">必須</span></div>
+        <input type="tel" class="input-field" id="phone" placeholder="例：09012345678（ハイフンなしでOK）" inputmode="tel" autocomplete="tel">
+        <div class="error-msg" id="err-phone">電話番号を入力してください</div>
+      </div>
+
+      <!-- フォロー連絡手段 -->
+      <div class="field-group">
+        <div class="field-label">服薬後のフォロー連絡について<span class="required">必須</span></div>
+        <div style="font-size:13px; color:#718096; margin-bottom:6px;">お薬を飲んだあと、副作用や飲み方の確認のためにご連絡することがあります</div>
+        <div class="card-options horizontal" id="followUpOptions">
+          <button class="card-opt card-opt-multi" data-name="followUp" data-value="電話" onclick="toggleMultiSelect(this)">電話</button>
+          <button class="card-opt card-opt-multi" data-name="followUp" data-value="SMS" onclick="toggleMultiSelect(this)">SMS</button>
+          <button class="card-opt card-opt-multi" data-name="followUp" data-value="LINE" onclick="toggleMultiSelect(this)">LINE</button>
+          <button class="card-opt card-opt-multi" data-name="followUp" data-value="不要" onclick="toggleMultiSelect(this)">不要</button>
+        </div>
+        <div class="error-msg" id="err-followUp">選択してください</div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-secondary" onclick="goToStep(3)">戻る</button>
+      <button class="btn-primary" id="nextBtn4" onclick="validateAndGo(4, 'confirm')" disabled>確認画面へ</button>
+    </div>
+  </div>
+
+  <!-- ===== 確認画面 ===== -->
+  <div class="section" id="sec-confirm">
+    <div class="card">
+      <div class="badge" style="background:var(--ok-bg);color:var(--ok);">入力内容の確認</div>
+      <div class="q-title">以下の内容で送信します</div>
+      <div class="q-note">内容をご確認ください。修正が必要な場合は各セクションの「修正」をタップしてください。</div>
+      <div id="confirmContent"></div>
+    </div>
+    <div style="margin:16px 0;">
+      <div class="checkbox-item" onclick="toggleCheckboxItem(this, event)" style="border-color:var(--pri);">
+        <input type="checkbox" id="agreeCheck" onchange="toggleSubmitBtn()">
+        <label style="font-size:15px; line-height:1.6;">入力内容を安全な調剤・服薬指導のために利用することに同意します</label>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-secondary" onclick="goToStep(4)">戻る</button>
+      <button class="btn-primary" id="submitBtn" onclick="submitForm()" style="background:var(--ok);" disabled>送信する</button>
+    </div>
+  </div>
+
+  <!-- ===== 完了画面 ===== -->
+  <div class="section" id="sec-complete">
+    <div class="card" style="text-align:center;padding:40px 24px;">
+      <div class="complete-icon">
+        <svg viewBox="0 0 40 40" fill="none">
+          <path d="M10 20 L17 27 L30 13" stroke="#27AE60" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"
+            style="stroke-dasharray:40;stroke-dashoffset:40;animation:checkDraw .6s .3s ease forwards;"/>
+        </svg>
+      </div>
+      <h2 style="font-size:22px;font-weight:700;margin-bottom:8px;color:var(--ok);">送信が完了しました</h2>
+      <p style="font-size:16px;color:var(--txs);line-height:1.7;margin-bottom:24px;">
+        問診票を受け付けました。<br>ご来局をお待ちしております。
+      </p>
+      <div class="info-box" style="text-align:left;">
+        <p style="white-space:nowrap;">&#128204; 受付番号や詳細は、薬局スタッフが確認後にお伝えいたします。</p>
+        <p style="margin-top:6px;">&#128222; ご不明な点は、お気軽にお電話ください。</p>
+        <p style="margin-top:6px;font-weight:700;" id="pharmacyPhoneDisplay"></p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer" id="footerArea"></div>
+
+<!-- 送信中オーバーレイ -->
+<div class="overlay" id="sendingOverlay">
+  <div class="overlay-box">
+    <div class="spinner"></div>
+    <p style="font-size:16px;font-weight:600;color:var(--tx);">送信中...</p>
+    <p style="font-size:13px;color:var(--txs);margin-top:6px;">しばらくお待ちください</p>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   カスタマイズ設定（ここを変更してください）
+   ============================================================ */
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxfiwyNVpHdVHsG9tqDcqqKUriUbZ_8GKvCb5OOLlnkeYW0wXRh0unj4QUFVLi6lHtK/exec';
+const SEC_KEY = 'monshin-2024';
+
+const PHARMACY_NAME = 'ジロー薬局';
+const PHARMACY_PHONE = '096-288-0783';
+const PHARMACY_FOOTER = '(C) 2026 ジロー薬局. All rights reserved.';
+
+/* ============================================================
+   初期化
+   ============================================================ */
+const formData = {};
+let currentStep = 0; // 0=start, 1-4=steps, 5=confirm, 6=complete
+let photoList = []; // 複数写真対応（最大5枚）
+const MAX_PHOTOS = 5;
+
+document.addEventListener('DOMContentLoaded', function() {
+  // 薬局名セット
+  document.getElementById('pharmacyNameHeader').textContent = PHARMACY_NAME;
+  document.getElementById('pharmacyNameStart').textContent = PHARMACY_NAME + ' Web問診票';
+  document.getElementById('pharmacyPhoneDisplay').textContent = 'TEL: ' + PHARMACY_PHONE;
+  document.getElementById('footerArea').textContent = PHARMACY_FOOTER;
+
+  // 氏名カナ：ひらがな→カタカナ自動変換（IME確定後に変換）
+  var nameInput = document.getElementById('nameKana');
+  var isComposing = false;
+  nameInput.addEventListener('compositionstart', function() { isComposing = true; });
+  nameInput.addEventListener('compositionend', function() {
+    isComposing = false;
+    this.value = this.value.replace(/[\u3041-\u3096]/g, function(ch) {
+      return String.fromCharCode(ch.charCodeAt(0) + 0x60);
+    });
+  });
+  nameInput.addEventListener('blur', function() {
+    this.value = this.value.replace(/[\u3041-\u3096]/g, function(ch) {
+      return String.fromCharCode(ch.charCodeAt(0) + 0x60);
+    });
+  });
+
+  // 生年月日セレクトボックス生成
+  buildDateSelectors();
+
+  // プログレスバー生成
+  buildProgressBar();
+});
+
+function buildDateSelectors() {
+  const yearSel = document.getElementById('birthYear');
+  const monthSel = document.getElementById('birthMonth');
+  const daySel = document.getElementById('birthDay');
+  const currentYear = new Date().getFullYear();
+
+  for (let y = currentYear; y >= 1920; y--) {
+    const opt = document.createElement('option');
+    opt.value = y;
+    opt.textContent = y + '年';
+    yearSel.appendChild(opt);
+  }
+  for (let m = 1; m <= 12; m++) {
+    const opt = document.createElement('option');
+    opt.value = m;
+    opt.textContent = m + '月';
+    monthSel.appendChild(opt);
+  }
+  for (let d = 1; d <= 31; d++) {
+    const opt = document.createElement('option');
+    opt.value = d;
+    opt.textContent = d + '日';
+    daySel.appendChild(opt);
+  }
+
+  // 生年月日変更時に14歳以下チェック
+  function checkAge() {
+    var y = yearSel.value, m = monthSel.value, d = daySel.value;
+    if (!y || !m || !d) return;
+    var today = new Date();
+    var birth = new Date(y, m - 1, d);
+    var age = today.getFullYear() - birth.getFullYear();
+    var mDiff = today.getMonth() - birth.getMonth();
+    if (mDiff < 0 || (mDiff === 0 && today.getDate() < birth.getDate())) age--;
+    document.getElementById('weightGroup').style.display = (age <= 14) ? 'block' : 'none';
+    checkStepReady(1);
+  }
+  yearSel.addEventListener('change', checkAge);
+  monthSel.addEventListener('change', checkAge);
+  daySel.addEventListener('change', checkAge);
+
+  // テキスト入力時のステップチェック
+  document.getElementById('nameKana').addEventListener('input', function() { checkStepReady(1); });
+  document.getElementById('bodyWeight').addEventListener('input', function() {
+    this.value = this.value.replace(/[０-９]/g, function(c) { return String.fromCharCode(c.charCodeAt(0) - 0xFEE0); });
+    checkStepReady(1);
+  });
+  document.getElementById('phone').addEventListener('input', function() {
+    this.value = normalizePhone(this.value);
+    checkStepReady(4);
+  });
+}
+
+function buildProgressBar() {
+  const bar = document.getElementById('progressBar');
+  bar.innerHTML = '';
+  for (let i = 1; i <= 4; i++) {
+    const seg = document.createElement('div');
+    seg.className = 'seg';
+    seg.dataset.step = i;
+    bar.appendChild(seg);
+  }
+}
+
+function updateProgress() {
+  const segs = document.querySelectorAll('.progress-bar .seg');
+  const label = document.getElementById('stepLabel');
+  const bar = document.getElementById('progressBar');
+
+  if (currentStep === 0 || currentStep > 4) {
+    bar.style.display = 'none';
+    label.style.display = 'none';
+    return;
+  }
+
+  bar.style.display = 'flex';
+  label.style.display = 'block';
+  var encouragement = {1: '', 2: '', 3: '  ─ あと少しです！', 4: '  ─ 最後のステップです！'};
+  label.textContent = 'STEP ' + currentStep + ' / 4' + (encouragement[currentStep] || '');
+
+  segs.forEach(function(seg) {
+    const s = parseInt(seg.dataset.step);
+    seg.className = 'seg';
+    if (s < currentStep) seg.classList.add('done');
+    else if (s === currentStep) seg.classList.add('active');
+  });
+}
+
+/* ============================================================
+   画面遷移
+   ============================================================ */
+function goToStep(step) {
+  var sections = document.querySelectorAll('.section');
+  sections.forEach(function(s) { s.classList.remove('on'); });
+
+  var targetId;
+  if (step === 0) { targetId = 'sec-start'; currentStep = 0; }
+  else if (step === 1) { targetId = 'sec-step1'; currentStep = 1; }
+  else if (step === 2) { targetId = 'sec-step2'; currentStep = 2; updatePregnancyVisibility(); }
+  else if (step === 3) { targetId = 'sec-step3'; currentStep = 3; }
+  else if (step === 4) { targetId = 'sec-step4'; currentStep = 4; }
+  else if (step === 'confirm') { targetId = 'sec-confirm'; currentStep = 5; buildConfirmScreen(); }
+  else if (step === 'complete') { targetId = 'sec-complete'; currentStep = 6; }
+
+  var target = document.getElementById(targetId);
+  if (target) target.classList.add('on');
+
+  updateProgress();
+  // 戻ったときにボタン状態を再チェック
+  if (step >= 1 && step <= 4) checkStepReady(step);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* ============================================================
+   行追加・削除
+   ============================================================ */
+function addInputRow(btn) {
+  var wrap = btn.closest('.multi-input-wrap');
+  var firstRow = wrap.querySelector('.multi-input-row');
+  var placeholder = firstRow.querySelector('.input-field').placeholder;
+  var newRow = document.createElement('div');
+  newRow.className = 'multi-input-row';
+  newRow.innerHTML = '<input type="text" class="input-field" placeholder="' + placeholder + '">'
+    + '<button type="button" class="add-row-btn" onclick="addInputRow(this)" title="行を追加">＋</button>'
+    + '<button type="button" class="remove-row-btn" onclick="removeInputRow(this)" title="この行を削除">✕</button>';
+  wrap.appendChild(newRow);
+  newRow.querySelector('.input-field').focus();
+}
+function removeInputRow(btn) {
+  btn.closest('.multi-input-row').remove();
+}
+function getMultiInputValues(wrapId) {
+  var wrap = document.getElementById(wrapId);
+  if (!wrap) return '';
+  var inputs = wrap.querySelectorAll('.input-field');
+  var vals = [];
+  inputs.forEach(function(inp) { if (inp.value.trim()) vals.push(inp.value.trim()); });
+  return vals.join('、');
+}
+
+/* ============================================================
+   ラジオ・マルチ選択
+   ============================================================ */
+function selectRadio(btn) {
+  var name = btn.dataset.name;
+  var value = btn.dataset.value;
+  var siblings = btn.parentElement.querySelectorAll('.card-opt');
+  siblings.forEach(function(s) { s.classList.remove('selected'); });
+  btn.classList.add('selected');
+  formData[name] = value;
+
+  // エラー消去
+  var errEl = document.getElementById('err-' + name);
+  if (errEl) errEl.classList.remove('show');
+
+  // ステップの完了チェック
+  checkStepReady(currentStep);
+}
+
+function toggleMultiSelect(btn) {
+  btn.classList.toggle('selected');
+
+  // 「不要」を選んだら他を外す、他を選んだら「不要」を外す
+  var name = btn.dataset.name;
+  var value = btn.dataset.value;
+  var parent = btn.parentElement;
+
+  if (value === '不要') {
+    parent.querySelectorAll('.card-opt-multi').forEach(function(b) {
+      if (b !== btn) b.classList.remove('selected');
+    });
+  } else {
+    parent.querySelectorAll('.card-opt-multi[data-value="不要"]').forEach(function(b) {
+      b.classList.remove('selected');
+    });
+  }
+
+  // エラー消去
+  var errEl = document.getElementById('err-followUp');
+  if (errEl) errEl.classList.remove('show');
+
+  // ステップの完了チェック
+  checkStepReady(currentStep);
+}
+
+function getMultiSelectValues(parentId) {
+  var values = [];
+  document.querySelectorAll('#' + parentId + ' .card-opt-multi.selected').forEach(function(b) {
+    values.push(b.dataset.value);
+  });
+  return values;
+}
+
+function toggleChip(chip) {
+  chip.classList.toggle('selected');
+}
+
+function getChipValues(groupId) {
+  var values = [];
+  document.querySelectorAll('#' + groupId + ' .chip.selected').forEach(function(c) {
+    values.push(c.dataset.value);
+  });
+  return values;
+}
+
+function toggleCheckboxItem(item, event) {
+  var cb = item.querySelector('input[type="checkbox"]');
+  if (event && (event.target === cb || event.target.tagName === 'LABEL')) {
+    setTimeout(function() {
+      item.classList.toggle('selected', cb.checked);
+      if (cb.onchange) cb.onchange();
+    }, 0);
+  } else {
+    cb.checked = !cb.checked;
+    item.classList.toggle('selected', cb.checked);
+    if (cb.onchange) cb.onchange();
+  }
+}
+
+function getCheckedValues(listId) {
+  var values = [];
+  document.querySelectorAll('#' + listId + ' input[type="checkbox"]:checked').forEach(function(cb) {
+    values.push(cb.value);
+  });
+  return values;
+}
+
+/* ============================================================
+   条件分岐表示
+   ============================================================ */
+function toggleCond(id, show) {
+  var el = document.getElementById(id);
+  if (el) {
+    if (show) el.classList.add('open');
+    else el.classList.remove('open');
+  }
+}
+
+function showMedsOption(type) {
+  toggleCond('cond-meds-photo', type === 'photo');
+  toggleCond('cond-meds-text', type === 'text');
+}
+
+function updatePregnancyVisibility() {
+  var gender = formData.gender;
+  var pg = document.getElementById('pregnancyGroup');
+  if (gender === '女性') {
+    pg.style.display = 'block';
+  } else {
+    pg.style.display = 'none';
+    formData.pregnancy = '';
+  }
+}
+
+/* ============================================================
+   写真アップロード
+   ============================================================ */
+function handlePhotoUpload(input) {
+  var file = input.files[0];
+  if (!file) return;
+  if (photoList.length >= MAX_PHOTOS) {
+    alert('写真は最大' + MAX_PHOTOS + '枚までです');
+    input.value = '';
+    return;
+  }
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    resizeImage(e.target.result, 1200, function(resized) {
+      photoList.push(resized);
+      input.value = '';
+      renderPhotoList();
+    });
+  };
+  reader.readAsDataURL(file);
+}
+
+function resizeImage(dataUrl, maxWidth, callback) {
+  var img = new Image();
+  img.onload = function() {
+    var w = img.width;
+    var h = img.height;
+    if (w > maxWidth) {
+      h = Math.round(h * maxWidth / w);
+      w = maxWidth;
+    }
+    var canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    var ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, w, h);
+    callback(canvas.toDataURL('image/jpeg', 0.85));
+  };
+  img.src = dataUrl;
+}
+
+function removePhoto(index) {
+  photoList.splice(index, 1);
+  renderPhotoList();
+}
+
+function renderPhotoList() {
+  var container = document.getElementById('photoList');
+  var countEl = document.getElementById('photoCount');
+  var uploadArea = document.getElementById('uploadArea');
+  var html = '';
+  photoList.forEach(function(src, i) {
+    html += '<div style="position:relative; margin-bottom:10px;">';
+    html += '<img src="' + src + '" style="max-width:100%; border-radius:10px; border:1px solid var(--bd);">';
+    html += '<button onclick="removePhoto(' + i + ')" style="position:absolute;top:8px;right:8px;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;border:none;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>';
+    html += '<div style="font-size:13px;color:var(--txs);text-align:center;margin-top:4px;">' + (i + 1) + '枚目</div>';
+    html += '</div>';
+  });
+  container.innerHTML = html;
+
+  if (photoList.length >= MAX_PHOTOS) {
+    uploadArea.style.display = 'none';
+  } else {
+    uploadArea.style.display = 'flex';
+  }
+
+  if (photoList.length > 0) {
+    countEl.style.display = 'block';
+    countEl.textContent = photoList.length + ' / ' + MAX_PHOTOS + ' 枚';
+  } else {
+    countEl.style.display = 'none';
+  }
+}
+
+/* ============================================================
+   バリデーション
+   ============================================================ */
+function showError(id, show) {
+  var el = document.getElementById(id);
+  if (el) {
+    if (show) el.classList.add('show');
+    else el.classList.remove('show');
+  }
+}
+
+function validateStep(step) {
+  var valid = true;
+
+  if (step === 1) {
+    if (!formData.inputBy) { showError('err-inputBy', true); valid = false; }
+    else showError('err-inputBy', false);
+
+    var nameKana = document.getElementById('nameKana').value.trim();
+    if (!nameKana) { showError('err-nameKana', true); valid = false; }
+    else showError('err-nameKana', false);
+
+    var y = document.getElementById('birthYear').value;
+    var m = document.getElementById('birthMonth').value;
+    var d = document.getElementById('birthDay').value;
+    if (!y || !m || !d) { showError('err-birth', true); valid = false; }
+    else showError('err-birth', false);
+
+    if (!formData.gender) { showError('err-gender', true); valid = false; }
+    else showError('err-gender', false);
+
+    // 14歳以下なら体重必須
+    if (document.getElementById('weightGroup').style.display !== 'none') {
+      var w = document.getElementById('bodyWeight').value;
+      if (!w) { showError('err-weight', true); valid = false; }
+      else showError('err-weight', false);
+    }
+  }
+
+  if (step === 2) {
+    if (!formData.allergy) { showError('err-allergy', true); valid = false; }
+    else showError('err-allergy', false);
+
+    if (!formData.sideEffect) { showError('err-sideEffect', true); valid = false; }
+    else showError('err-sideEffect', false);
+
+    if (!formData.currentDisease) { showError('err-currentDisease', true); valid = false; }
+    else showError('err-currentDisease', false);
+
+    if (!formData.otherHospital) { showError('err-otherHospital', true); valid = false; }
+    else showError('err-otherHospital', false);
+
+    if (!formData.currentMeds) { showError('err-currentMeds', true); valid = false; }
+    else showError('err-currentMeds', false);
+
+    // 妊娠（女性のみ）
+    if (formData.gender === '女性') {
+      if (!formData.pregnancy) { showError('err-pregnancy', true); valid = false; }
+      else showError('err-pregnancy', false);
+    }
+  }
+
+  if (step === 3) {
+    if (!formData.leftoverMeds) { showError('err-leftoverMeds', true); valid = false; }
+    else showError('err-leftoverMeds', false);
+
+    if (!formData.swallowDifficulty) { showError('err-swallowDifficulty', true); valid = false; }
+    else showError('err-swallowDifficulty', false);
+
+    if (!formData.symptoms) { showError('err-symptoms', true); valid = false; }
+    else showError('err-symptoms', false);
+  }
+
+  if (step === 4) {
+    if (!formData.genericPref) { showError('err-genericPref', true); valid = false; }
+    else showError('err-genericPref', false);
+
+    var phone = normalizePhone(document.getElementById('phone').value);
+    if (!phone) { showError('err-phone', true); valid = false; }
+    else if (!/^[0-9]{10,11}$/.test(phone)) {
+      document.getElementById('err-phone').textContent = '電話番号は10〜11桁の数字で入力してください';
+      showError('err-phone', true); valid = false;
+    }
+    else showError('err-phone', false);
+
+    var followUp = getMultiSelectValues('followUpOptions');
+    if (followUp.length === 0) { showError('err-followUp', true); valid = false; }
+    else showError('err-followUp', false);
+  }
+
+  return valid;
+}
+
+function validateAndGo(fromStep, toStep) {
+  if (validateStep(fromStep)) {
+    goToStep(toStep);
+  } else {
+    // 最初のエラーまでスクロール
+    var firstErr = document.querySelector('.section.on .error-msg.show');
+    if (firstErr) {
+      firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+}
+
+/* ============================================================
+   確認画面構築
+   ============================================================ */
+function buildConfirmScreen() {
+  var html = '';
+
+  // STEP 1
+  html += '<div class="confirm-section">';
+  html += '<div class="confirm-section-title">STEP 1：基本情報 <span class="edit-link" onclick="goToStep(1)">修正</span></div>';
+  html += confirmRow('入力者', formData.inputBy || '');
+  html += confirmRow('氏名（カナ）', document.getElementById('nameKana').value);
+  var y = document.getElementById('birthYear').value;
+  var m = document.getElementById('birthMonth').value;
+  var d = document.getElementById('birthDay').value;
+  html += confirmRow('生年月日', y + '年' + m + '月' + d + '日');
+  html += confirmRow('性別', formData.gender || '');
+  if (document.getElementById('weightGroup').style.display !== 'none') {
+    html += confirmRow('体重', document.getElementById('bodyWeight').value + ' kg');
+  }
+  html += '</div>';
+
+  // STEP 2
+  html += '<div class="confirm-section">';
+  html += '<div class="confirm-section-title">STEP 2：安全チェック <span class="edit-link" onclick="goToStep(2)">修正</span></div>';
+  html += confirmRow('アレルギー歴', formData.allergy || '');
+  if (formData.allergy === 'はい') {
+    html += confirmRow('アレルギー種類', getChipValues('allergyChips').join('、') || '-');
+    html += confirmRow('アレルギー詳細', getMultiInputValues('allergyDetailWrap') || '-');
+  }
+  html += confirmRow('副作用歴', formData.sideEffect || '');
+  if (formData.sideEffect === 'はい') {
+    html += confirmRow('副作用詳細', getMultiInputValues('sideEffectDetailWrap') || '-');
+  }
+  html += confirmRow('治療中の病気', formData.currentDisease || '');
+  if (formData.currentDisease === 'はい') {
+    var diseases = getCheckedValues('diseaseList');
+    var otherD = document.getElementById('diseaseOther').value;
+    if (otherD) diseases.push(otherD);
+    html += confirmRow('病名', diseases.join('、') || '-');
+  }
+  html += confirmRow('他科受診', formData.otherHospital || '');
+  if (formData.otherHospital === 'はい') {
+    html += confirmRow('医療機関名', getMultiInputValues('otherHospitalWrap') || '-');
+  }
+  html += confirmRow('使用中の薬', formData.currentMeds || '');
+  if (formData.currentMeds === '手帳あり' && photoList.length > 0) {
+    html += confirmRow('手帳写真', photoList.length + '枚');
+    photoList.forEach(function(src, i) {
+      html += '<div style="margin:6px 0;"><img src="' + src + '" style="max-width:100%;border-radius:8px;border:1px solid var(--bd);"><div style="font-size:12px;color:var(--txs);text-align:center;">' + (i+1) + '枚目</div></div>';
+    });
+  }
+  if (formData.currentMeds === '手帳なし・薬あり') {
+    html += confirmRow('薬の詳細', document.getElementById('currentMedsDetail').value || '-');
+  }
+  if (formData.gender === '女性') {
+    html += confirmRow('妊娠・授乳', formData.pregnancy || '-');
+  }
+  html += '</div>';
+
+  // STEP 3
+  html += '<div class="confirm-section">';
+  html += '<div class="confirm-section-title">STEP 3：服薬状況 <span class="edit-link" onclick="goToStep(3)">修正</span></div>';
+  html += confirmRow('残薬', formData.leftoverMeds || '');
+  if (formData.leftoverMeds === 'はい') {
+    html += confirmRow('残薬詳細', document.getElementById('leftoverDetail').value || '-');
+  }
+  html += confirmRow('飲みにくさ', formData.swallowDifficulty || '');
+  if (formData.swallowDifficulty === 'はい') {
+    html += confirmRow('飲みにくさ詳細', getChipValues('swallowChips').join('、') || '-');
+  }
+  html += confirmRow('気になる症状', formData.symptoms || '');
+  if (formData.symptoms === 'はい') {
+    var symptomChipVals = getChipValues('symptomChips').join('、');
+    if (symptomChipVals) html += confirmRow('症状の種類', symptomChipVals);
+    html += confirmRow('症状詳細', document.getElementById('symptomsDetail').value || '-');
+  }
+  html += '</div>';
+
+  // STEP 4
+  html += '<div class="confirm-section">';
+  html += '<div class="confirm-section-title">STEP 4：お薬の希望とご連絡先 <span class="edit-link" onclick="goToStep(4)">修正</span></div>';
+  html += confirmRow('お薬のご希望', formData.genericPref || '');
+  if (formData.genericPref === '希望あり') {
+    html += confirmRow('希望内容', document.getElementById('medsPrefDetail').value || '-');
+  }
+  html += confirmRow('ご相談', document.getElementById('consultation').value || '-');
+  html += confirmRow('電話番号', document.getElementById('phone').value || '');
+  html += confirmRow('フォロー手段', getMultiSelectValues('followUpOptions').join('、') || '');
+  html += '</div>';
+
+  document.getElementById('confirmContent').innerHTML = html;
+}
+
+function confirmRow(label, value) {
+  return '<div class="confirm-row"><span class="label">' + escapeHtml(label) + '</span><span class="value">' + escapeHtml(value) + '</span></div>';
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+/* ============================================================
+   送信処理
+   ============================================================ */
+function buildPayload() {
+  var y = document.getElementById('birthYear').value;
+  var m = String(document.getElementById('birthMonth').value).padStart(2, '0');
+  var d = String(document.getElementById('birthDay').value).padStart(2, '0');
+
+  var diseases = [];
+  if (formData.currentDisease === 'はい') {
+    diseases = getCheckedValues('diseaseList');
+    var otherD = document.getElementById('diseaseOther').value.trim();
+    if (otherD) diseases.push(otherD);
+  }
+
+  var payload = {
+    secKey: SEC_KEY,
+    inputBy: formData.inputBy || '',
+    nameKana: document.getElementById('nameKana').value.trim(),
+    birthDate: y + '-' + m + '-' + d,
+    gender: formData.gender || '',
+    bodyWeight: document.getElementById('weightGroup').style.display !== 'none' ? document.getElementById('bodyWeight').value : '',
+    allergy: formData.allergy || '',
+    allergyType: formData.allergy === 'はい' ? getChipValues('allergyChips') : [],
+    allergyDetail: formData.allergy === 'はい' ? getMultiInputValues('allergyDetailWrap').trim() : '',
+    sideEffect: formData.sideEffect || '',
+    sideEffectDetail: formData.sideEffect === 'はい' ? getMultiInputValues('sideEffectDetailWrap').trim() : '',
+    currentDiseases: diseases,
+    otherHospital: formData.otherHospital || '',
+    otherHospitalName: formData.otherHospital === 'はい' ? getMultiInputValues('otherHospitalWrap').trim() : '',
+    currentMeds: formData.currentMeds || '',
+    currentMedsDetail: formData.currentMeds === '手帳なし・薬あり' ? document.getElementById('currentMedsDetail').value.trim() : '',
+    medsPhotos: formData.currentMeds === '手帳あり' ? photoList : [],
+    pregnancy: formData.gender === '女性' ? (formData.pregnancy || '') : '',
+    leftoverMeds: formData.leftoverMeds || '',
+    leftoverDetail: formData.leftoverMeds === 'はい' ? document.getElementById('leftoverDetail').value.trim() : '',
+    swallowDifficulty: formData.swallowDifficulty || '',
+    swallowDetail: formData.swallowDifficulty === 'はい' ? getChipValues('swallowChips') : [],
+    symptoms: formData.symptoms || '',
+    symptomTypes: formData.symptoms === 'はい' ? getChipValues('symptomChips') : [],
+    symptomsDetail: formData.symptoms === 'はい' ? document.getElementById('symptomsDetail').value.trim() : '',
+    genericPref: formData.genericPref || '',
+    medsPrefDetail: formData.genericPref === '希望あり' ? document.getElementById('medsPrefDetail').value.trim() : '',
+    consultation: document.getElementById('consultation').value.trim(),
+    phone: document.getElementById('phone').value.trim(),
+    followUpMethod: getMultiSelectValues('followUpOptions').join('、')
+  };
+
+  return payload;
+}
+
+function normalizePhone(val) {
+  return val.replace(/[０-９]/g, function(c) {
+    return String.fromCharCode(c.charCodeAt(0) - 0xFEE0);
+  }).replace(/[\s\-ー－]/g, '').trim();
+}
+
+function toggleSubmitBtn() {
+  var btn = document.getElementById('submitBtn');
+  btn.disabled = !document.getElementById('agreeCheck').checked;
+}
+
+function checkStepReady(step) {
+  var ready = true;
+  var btnId = 'nextBtn' + step;
+
+  if (step === 1) {
+    if (!formData.inputBy) ready = false;
+    if (!document.getElementById('nameKana').value.trim()) ready = false;
+    var y = document.getElementById('birthYear').value;
+    var m = document.getElementById('birthMonth').value;
+    var d = document.getElementById('birthDay').value;
+    if (!y || !m || !d) ready = false;
+    if (!formData.gender) ready = false;
+    if (document.getElementById('weightGroup').style.display !== 'none') {
+      if (!document.getElementById('bodyWeight').value) ready = false;
+    }
+  }
+
+  if (step === 2) {
+    if (!formData.allergy) ready = false;
+    if (!formData.sideEffect) ready = false;
+    if (!formData.currentDisease) ready = false;
+    if (!formData.otherHospital) ready = false;
+    if (!formData.currentMeds) ready = false;
+    if (formData.gender === '女性' && !formData.pregnancy) ready = false;
+  }
+
+  if (step === 3) {
+    if (!formData.leftoverMeds) ready = false;
+    if (!formData.swallowDifficulty) ready = false;
+    if (!formData.symptoms) ready = false;
+  }
+
+  if (step === 4) {
+    if (!formData.genericPref) ready = false;
+    var phone = normalizePhone(document.getElementById('phone').value);
+    if (!phone || !/^[0-9]{10,11}$/.test(phone)) ready = false;
+    var followUp = getMultiSelectValues('followUpOptions');
+    if (followUp.length === 0) ready = false;
+  }
+
+  var btn = document.getElementById(btnId);
+  if (btn) btn.disabled = !ready;
+}
+
+function submitForm() {
+  if (!document.getElementById('agreeCheck').checked) return;
+
+  var payload = buildPayload();
+  var overlay = document.getElementById('sendingOverlay');
+  overlay.classList.add('on');
+
+  // GAS_URLが未設定の場合はデモモード
+  if (GAS_URL === 'ここにGASデプロイURLを貼り付け') {
+    console.log('送信データ（デモモード）:', JSON.stringify(payload, null, 2));
+    setTimeout(function() {
+      overlay.classList.remove('on');
+      goToStep('complete');
+    }, 1500);
+    return;
+  }
+
+  fetch(GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    mode: 'no-cors'
+  })
+  .then(function() {
+    overlay.classList.remove('on');
+    goToStep('complete');
+  })
+  .catch(function(err) {
+    overlay.classList.remove('on');
+    alert('送信に失敗しました。もう一度お試しください。\n\nエラー: ' + err.message);
+    console.error('送信エラー:', err);
+  });
+}
+
+/* ============================================================
+   ドラッグ&ドロップ対応
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', function() {
+  var uploadArea = document.getElementById('uploadArea');
+  if (uploadArea) {
+    uploadArea.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      uploadArea.classList.add('dragover');
+    });
+    uploadArea.addEventListener('dragleave', function(e) {
+      e.preventDefault();
+      uploadArea.classList.remove('dragover');
+    });
+    uploadArea.addEventListener('drop', function(e) {
+      e.preventDefault();
+      uploadArea.classList.remove('dragover');
+      if (e.dataTransfer.files.length > 0) {
+        document.getElementById('medsPhotoInput').files = e.dataTransfer.files;
+        handlePhotoUpload(document.getElementById('medsPhotoInput'));
+      }
+    });
+  }
+});
+</script>
+
+</body>
+</html>
