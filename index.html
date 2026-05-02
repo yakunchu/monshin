@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 <title>Web問診票 | 調剤薬局</title>
+<!-- Cloudflare Turnstile (Bot対策・第3課 2026-05-02) -->
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <style>
 /* ========== カスタマイズ変数 ========== */
 :root {
@@ -961,6 +963,8 @@ textarea.input-field {
         <label style="font-size:15px; line-height:1.6;">入力内容を安全な調剤・服薬指導のために利用することに同意します</label>
       </div>
     </div>
+    <!-- Cloudflare Turnstile widget (第3課 2026-05-02 本番キー) -->
+    <div class="cf-turnstile" data-sitekey="0x4AAAAAADHkWVJdzrHtJBMm" data-theme="light" style="margin:12px 0;display:flex;justify-content:center"></div>
     <div class="btn-row">
       <button class="btn-secondary" onclick="goToStep(4)">戻る</button>
       <button class="btn-primary" id="submitBtn" onclick="submitForm()" style="background:var(--ok);" disabled>送信する</button>
@@ -1695,7 +1699,18 @@ function checkStepReady(step) {
 function submitForm() {
   if (!document.getElementById('agreeCheck').checked) return;
 
+  // Cloudflare Turnstile トークン取得（第3課 2026-05-02）
+  var turnstileToken = '';
+  try {
+    if (typeof turnstile !== 'undefined') { turnstileToken = turnstile.getResponse() || ''; }
+  } catch (e) { console.warn('Turnstile取得エラー', e); }
+  if (!turnstileToken) {
+    alert('セキュリティチェックが未完了です。\nしばらく待ってから再度お試しください。\n問題が続く場合はお電話でも受付可能です。');
+    return;
+  }
+
   var payload = buildPayload();
+  payload.cf_turnstile_token = turnstileToken;
   var overlay = document.getElementById('sendingOverlay');
   overlay.classList.add('on');
 
